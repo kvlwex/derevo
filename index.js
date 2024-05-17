@@ -1,13 +1,47 @@
-import { mkfile, mkdir, getChildren, getMeta, getName, isFile, isDirectory } from "@hexlet/immutable-fs-trees";
+const { mkfile, mkdir, getChildren, getMeta, getName, isFile, isDirectory } = require('@hexlet/immutable-fs-trees');
 
-const file1 = mkfile('file1.txt', {size: 100});
-const file2 = mkfile('file2.txt', {size: 200});
-const dir1 = mkdir('dir1', [file1]);
-const dir2 = mkdir('dir2', [file2]);
-const rootDir = mkdir('root', [dir1, dir2]);
 
-console.log('Children of root:', getChildren(rootDir));
-console.log('Meta of file1:', getMeta(file1));
-console.log('Name of dir1:', getName(dir1));
-console.log('Is file1 a file?', isFile(file1));
-console.log('Is rootDir a directory?', isDirectory(rootDir));
+const tree = mkdir('/', { size: 0 }, [
+  mkdir('etc', { size: 0 }, [
+    mkfile('config', { size: 100 }),
+    mkfile('hosts', { size: 50 }),
+  ]),
+  mkdir('usr', { size: 0 }, [
+    mkfile('readme.md', { size: 200 }),
+    mkdir('local', { size: 0 }, [
+      mkfile('bin', { size: 300 })
+    ]),
+  ]),
+  mkfile('index.html', { size: 500 }),
+]);
+
+
+const capitalizeFileNames = (node) => {
+  if (isFile(node)) {
+    const name = getName(node);
+    const newName = name.charAt(0).toUpperCase() + name.slice(1);
+    return mkfile(newName, getMeta(node));
+  }
+
+  const children = getChildren(node).map(capitalizeFileNames);
+  return mkdir(getName(node), getMeta(node), children);
+};
+
+
+const removeFiles = (node) => {
+  if (isFile(node)) {
+    return null;
+  }
+
+  const children = getChildren(node).map(removeFiles).filter(Boolean);
+  return mkdir(getName(node), getMeta(node), children);
+};
+
+
+const capitalizedTree = capitalizeFileNames(tree);
+const treeWithoutFiles = removeFiles(capitalizedTree);
+
+
+console.log(JSON.stringify(tree, null, 2));
+console.log(JSON.stringify(capitalizedTree, null, 2));
+console.log(JSON.stringify(treeWithoutFiles, null, 2));
